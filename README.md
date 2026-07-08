@@ -20,11 +20,18 @@ Originally based on [Tech-How/YTM-Downloader](https://github.com/Tech-How/YTM-Do
 ## Requirements
 
 - Windows 10/11
-- [Python 3.10+](https://www.python.org/downloads/) (needed for playlist/Spotify resolution), with `pip` on PATH
+- [Python 3.10+](https://www.python.org/downloads/) (needed for playlist/Spotify resolution), with `pip` on PATH - `Setup.cmd` (below) installs this for you via `winget` if it's missing
 
 ## Setup
 
-This repo does **not** include the third-party tools it relies on, to keep the repo small and avoid redistributing other people's binaries. You need to grab each one once, after cloning:
+This repo does **not** include the third-party tools it relies on, to keep the repo small and avoid redistributing other people's binaries. You need to grab each one once, after cloning.
+
+**Quick way:** run `Setup.cmd`. It downloads yt-dlp and ffmpeg automatically, opens the AlbumArtDownloader installer for you, copies `msg.exe` from Windows if available, installs Python via `winget` if it's missing, and installs the required Python packages. Safe to re-run any time - it skips anything already in place.
+
+> If `Setup.cmd` had to install Python itself, it'll ask you to close the window and run it
+> again - Windows only picks up the new PATH in a fresh terminal, not the one that just ran the installer.
+
+If you'd rather do it by hand (or `Setup.cmd` fails to download something), here's what it's doing:
 
 ### 1. yt-dlp (does the actual downloading)
 Download the standalone `yt-dlp.exe` from the [yt-dlp releases page](https://github.com/yt-dlp/yt-dlp/releases) and place it in:
@@ -50,7 +57,13 @@ Redistributables\msg.exe
 ```
 (Windows Home editions historically don't ship it. If you don't have it, you'll need to source it separately - the app's integrity check requires it to be present.)
 
-### 5. Python packages
+### 5. Python
+Install [Python 3.10+](https://www.python.org/downloads/) (tick "Add python.exe to PATH" during install), or via winget:
+```
+winget install -e --id Python.Python.3.13
+```
+
+### 6. Python packages
 ```
 python3 -m pip install ytmusicapi spotifyscraper
 ```
@@ -79,6 +92,7 @@ Only works for playlists/albums that are set to **Public** in Spotify. Track and
 
 ```
 .
+├── Setup.cmd                  Downloads/installs the third-party dependencies below
 ├── Add Music.cmd              Queue up songs/playlists/albums (YTM, Spotify, beatbump)
 ├── Download.cmd               Downloads everything currently queued in URLs.txt
 ├── Import.cmd                 Open/move downloaded songs into your media player

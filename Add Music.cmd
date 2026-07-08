@@ -71,7 +71,9 @@ Redistributables\YouTube-DL\youtube-dl.exe --ffmpeg-location "%~dp0Redistributab
 goto fetchDone
 
 :fetchPlaylistFull
-python3 "%~dp0Redistributables\Scripts\get_playlist_ids.py" "%URL%" >> "%~dp0URLs.txt"
+call :ensurePython
+if not defined pythonCmd goto prompt
+%pythonCmd% "%~dp0Redistributables\Scripts\get_playlist_ids.py" "%URL%" >> "%~dp0URLs.txt"
 
 :fetchDone
 cls
@@ -85,12 +87,14 @@ echo.
 goto prompt
 
 :spotifyFlow
+call :ensurePython
+if not defined pythonCmd goto prompt
 cls
 title Loading...
 echo Please wait while your music is being matched on YouTube Music.
 echo This can take a while for large playlists - each track is searched individually.
 echo.
-python3 "%~dp0Redistributables\Scripts\get_spotify_ids.py" "%URL%" >> "%~dp0URLs.txt"
+%pythonCmd% "%~dp0Redistributables\Scripts\get_spotify_ids.py" "%URL%" >> "%~dp0URLs.txt"
 set "spotifyExit=%errorlevel%"
 if "%spotifyExit%"=="1" (
 	echo.
@@ -104,6 +108,23 @@ if "%spotifyExit%"=="2" (
 	pause >nul
 )
 goto fetchDone
+
+:ensurePython
+if defined pythonCmd goto :eof
+where python3 >nul 2>&1
+if not errorlevel 1 (set "pythonCmd=python3" & goto :eof)
+where python >nul 2>&1
+if not errorlevel 1 (set "pythonCmd=python" & goto :eof)
+cls
+echo ERROR: Python was not found, but this feature needs it.
+echo Install it from https://www.python.org/downloads/ ^(tick "Add python.exe to PATH"
+echo during install^), run Setup.cmd to install the required packages, then try again.
+echo.
+echo Single YouTube Music song links ^(not playlists/albums^) still work without Python.
+echo.
+echo Press any key to continue...
+pause >nul
+goto :eof
 
 :error
 cls
