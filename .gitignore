@@ -1,0 +1,49 @@
+# ---- Runtime state & user data (created automatically while using the app) ----
+/Cache/
+/YTMusic/
+/Settings/
+/URLs.txt
+/URLs.txt.bak
+/URLs.txt.bak2
+/URLs.txt.bak3
+/done_ids.txt
+/NotFound.txt
+/Redistributables/dlProgress
+/Redistributables/Track.txt
+/Redistributables/TotalTracks.txt
+/Redistributables/LastRun.txt
+/Redistributables/progressChomp.txt
+/Redistributables/progressState.txt
+/Redistributables/progressTickerRun.txt
+/Redistributables/ytdlp.log
+/Recovered */
+
+# Downloaded songs land in a dated folder in the project root after each run.
+# The exact separator/order depends on Windows locale (seen so far: "MM_DD_YYYY"
+# for en-US, "DD.MM.YYYY" for ru-RU) - these patterns cover both, optionally with
+# a " HH-MM-SS" time suffix appended on same-day collisions. Recovered-session
+# folders use a similar naming scheme.
+/[0-9][0-9]_[0-9][0-9]_[0-9][0-9][0-9][0-9]*/
+/[0-9][0-9].[0-9][0-9].[0-9][0-9][0-9][0-9]*/
+# ALWAYS double-check `git status` before committing - actual downloaded audio
+# must never be pushed to this repo.
+
+# ---- Third-party redistributables (see README.md "Setup" section) ----
+/Redistributables/FFMPEG/bin/
+/Redistributables/FFMPEG/doc/
+/Redistributables/FFMPEG/presets/
+/Redistributables/FFMPEG/LICENSE
+/Redistributables/FFMPEG/README.txt
+/Redistributables/FFMPEG/*.zip
+/Redistributables/YouTube-DL/youtube-dl.exe
+/Redistributables/YouTube-DL/yt-dlp.exe
+/Redistributables/YouTube-DL/node.exe
+/Redistributables/AlbumArtDownloader/
+/Redistributables/msg.exe
+
+# ---- Python ----
+/Redistributables/Scripts/__pycache__/
+*.pyc
+
+# ---- Local tool config ----
+/.claude/
