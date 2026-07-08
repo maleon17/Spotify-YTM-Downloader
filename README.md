@@ -78,21 +78,25 @@ Only works for playlists/albums that are set to **Public** in Spotify. Track and
 ## Project structure
 
 ```
-Add Music.cmd            Queue up songs/playlists/albums (YTM, Spotify, beatbump)
-Download.cmd              Downloads everything currently queued in URLs.txt
-Import.cmd                 Open/move downloaded songs into your media player
-Find Duplicates.cmd        Compare two folders for duplicate filenames
-Clear.cmd                   Clean up temporary files/folders
-Video [Experimental].cmd    Unsupported one-off video/audio downloader
-Redistributables/
-  Downloader.cmd            Per-track download/tag/artwork logic (called by Download.cmd)
-  ProgressBar.cmd            Shared bottom-pinned progress bar renderer
-  ProgressTicker.cmd         Background process that animates the bar during downloads
-  Get Info.cmd                Reads Explorer-shell metadata from a file
-  Scripts/
-    get_playlist_ids.py        Resolves a YTM playlist link to video IDs
-    get_spotify_ids.py         Resolves a Spotify link to matched YTM video IDs
-  FFMPEG/, YouTube-DL/, AlbumArtDownloader/, msg.exe   Third-party tools (see Setup)
+.
+├── Add Music.cmd              Queue up songs/playlists/albums (YTM, Spotify, beatbump)
+├── Download.cmd               Downloads everything currently queued in URLs.txt
+├── Import.cmd                 Open/move downloaded songs into your media player
+├── Find Duplicates.cmd        Compare two folders for duplicate filenames
+├── Clear.cmd                  Clean up temporary files/folders
+├── Video [Experimental].cmd   Unsupported one-off video/audio downloader
+└── Redistributables/
+    ├── Downloader.cmd         Per-track download/tag/artwork logic (called by Download.cmd)
+    ├── ProgressBar.cmd        Shared bottom-pinned progress bar renderer
+    ├── ProgressTicker.cmd     Background process that animates the bar during downloads
+    ├── Get Info.cmd           Reads Explorer-shell metadata from a file
+    ├── Scripts/
+    │   ├── get_playlist_ids.py   Resolves a YTM playlist link to video IDs
+    │   └── get_spotify_ids.py    Resolves a Spotify link to matched YTM video IDs
+    ├── FFMPEG/                third-party ffmpeg binaries (see Setup)
+    ├── YouTube-DL/            third-party yt-dlp binary (see Setup)
+    ├── AlbumArtDownloader/    third-party AlbumArtDownloader files (see Setup)
+    └── msg.exe                third-party Windows notification utility (see Setup)
 ```
 
 ## Credits
