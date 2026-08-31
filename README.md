@@ -1,8 +1,10 @@
-# YTM Downloader
+# Spotify-YTM-Downloader
+
+Current release: **v1.0.1**
 
 Windows batch scripts that download songs, albums, and playlists from **YouTube Music** (and **Spotify**, matched via YouTube Music) as tagged MP3 files - complete with metadata and album artwork - and hand them off to your media player of choice.
 
-Originally based on [Tech-How/YTM-Downloader](https://github.com/Tech-How/YTM-Downloader), extended with Spotify support, crash recovery, a live progress bar, and various fixes.
+Originally based on [Tech-How/YouTube-Music-Downloader](https://github.com/Tech-How/YouTube-Music-Downloader), extended with Spotify support, crash recovery, a live progress bar, and various fixes.
 
 > **Note:** this downloads audio from YouTube for personal use. That's outside YouTube's Terms of Service in most jurisdictions - use at your own discretion, for content you have the right to download.
 
@@ -16,6 +18,7 @@ Originally based on [Tech-How/YTM-Downloader](https://github.com/Tech-How/YTM-Do
 - Recovers cleanly if you close the terminal mid-download - just re-run `Download.cmd`
 - Optional auto-import into your media player, or auto-move into a media library folder
 - Tracks that can't be matched on YouTube Music are listed in `NotFound.txt` for manual lookup
+- Failed downloads are listed in `FailedDownloads.txt`; the queue is kept so they can be retried safely
 
 ## Requirements
 
@@ -55,7 +58,7 @@ This is a standard Windows utility. On Windows Pro/Enterprise it already exists 
 ```
 Redistributables\msg.exe
 ```
-(Windows Home editions historically don't ship it. If you don't have it, you'll need to source it separately - the app's integrity check requires it to be present.)
+(Windows Home editions historically don't ship it. It is optional: without it, the downloader simply skips the one-time notification popup.)
 
 ### 5. Python
 Install [Python 3.10+](https://www.python.org/downloads/) (tick "Add python.exe to PATH" during install), or via winget:
@@ -65,7 +68,7 @@ winget install -e --id Python.Python.3.13
 
 ### 6. Python packages
 ```
-python3 -m pip install ytmusicapi spotifyscraper
+python3 -m pip install -r requirements.txt
 ```
 
 Once all of the above are in place, run `Download.cmd` once - it'll tell you if anything required is still missing.
@@ -78,6 +81,8 @@ Once all of the above are in place, run `Download.cmd` once - it'll tell you if 
    - A [beatbump.io](https://beatbump.io) link
 2. Run **Download.cmd**. It'll ask if the queued songs are an album (keeps them numbered together and reuses one cover) or singles (each gets its own artwork).
 3. Downloaded songs land in a dated folder in the project root. If auto-import is enabled (configured on first run), they're opened or moved into your media library automatically.
+
+If one or more downloads fail, their IDs are written to `FailedDownloads.txt` and `URLs.txt` is kept intact. Run `Download.cmd` again to retry them; completed tracks are skipped through `done_ids.txt`.
 
 Other scripts:
 - **Import.cmd** - opens/moves songs from a given folder into your media player/library (also works via drag-and-drop onto the script)
@@ -110,7 +115,7 @@ Only works for playlists/albums that are set to **Public** in Spotify. Track and
     ├── FFMPEG/                third-party ffmpeg binaries (see Setup)
     ├── YouTube-DL/            third-party yt-dlp binary (see Setup)
     ├── AlbumArtDownloader/    third-party AlbumArtDownloader files (see Setup)
-    └── msg.exe                third-party Windows notification utility (see Setup)
+    └── msg.exe                optional Windows notification utility (see Setup)
 ```
 
 ## Credits
@@ -120,4 +125,8 @@ Only works for playlists/albums that are set to **Public** in Spotify. Track and
 - [AlbumArtDownloader](https://sourceforge.net/projects/album-art/)
 - [ytmusicapi](https://github.com/sigma67/ytmusicapi)
 - [spotifyscraper](https://github.com/AliAkhtari78/SpotifyScraper)
-- Original project: [Tech-How/YTM-Downloader](https://github.com/Tech-How/YTM-Downloader)
+- Original project: [Tech-How/YouTube-Music-Downloader](https://github.com/Tech-How/YouTube-Music-Downloader)
+
+## License
+
+This modified project is distributed under the [GNU General Public License v3.0](LICENSE), matching the license of the original project. Original and third-party copyright notices remain with their respective authors.

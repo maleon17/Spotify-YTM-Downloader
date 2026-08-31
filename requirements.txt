@@ -1,0 +1,2 @@
+ytmusicapi>=1.12,<2
+spotifyscraper>=3.9,<4

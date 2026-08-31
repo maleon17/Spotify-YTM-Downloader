@@ -1,6 +1,6 @@
 :YTM Duplicate Finder
-:Created by Tristian Dedinas - https://github.com/Tech-How
-:Version 1.3
+:Originally created by Tristian Dedinas - https://github.com/Tech-How/YouTube-Music-Downloader
+:Version 1.0.1
 
 @echo off
 title YTM Duplicate Finder

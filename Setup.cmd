@@ -1,6 +1,6 @@
 :YTM Downloader Setup
 :Downloads/installs the third-party dependencies listed in README.md "Setup"
-:Version 1.1
+:Version 1.0.1
 
 @echo off
 title YTM Downloader Setup
@@ -20,7 +20,9 @@ if exist "Redistributables\YouTube-DL\yt-dlp.exe" (
 	echo [1/6] Downloading yt-dlp...
 	if not exist "Redistributables\YouTube-DL" md "Redistributables\YouTube-DL"
 	powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe' -OutFile 'Redistributables\YouTube-DL\yt-dlp.exe' -UseBasicParsing } catch { exit 1 }"
+	if not errorlevel 1 powershell -NoProfile -Command "$b=[IO.File]::ReadAllBytes('Redistributables\YouTube-DL\yt-dlp.exe'); if($b.Length -lt 2 -or $b[0] -ne 0x4D -or $b[1] -ne 0x5A){exit 1}"
 	if errorlevel 1 (
+		if exist "Redistributables\YouTube-DL\yt-dlp.exe" del /q "Redistributables\YouTube-DL\yt-dlp.exe"
 		echo   FAILED - download it manually from https://github.com/yt-dlp/yt-dlp/releases
 		echo   and place yt-dlp.exe in Redistributables\YouTube-DL\
 	) else (
@@ -35,7 +37,9 @@ if exist "Redistributables\FFMPEG\bin\ffmpeg.exe" (
 ) else (
 	echo [2/6] Downloading ffmpeg...
 	powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip' -OutFile 'Redistributables\FFMPEG\ffmpeg.zip' -UseBasicParsing } catch { exit 1 }"
+	if not errorlevel 1 tar.exe -tf "Redistributables\FFMPEG\ffmpeg.zip" >nul 2>&1
 	if errorlevel 1 (
+		if exist "Redistributables\FFMPEG\ffmpeg.zip" del /q "Redistributables\FFMPEG\ffmpeg.zip"
 		echo   FAILED - download a Windows build manually from https://www.gyan.dev/ffmpeg/builds/
 		echo   and drop the zip file into Redistributables\FFMPEG\
 	) else (
@@ -48,18 +52,30 @@ echo.
 REM --- 3. AlbumArtDownloader ---
 if exist "Redistributables\AlbumArtDownloader\aad.exe" (
 	echo [3/6] AlbumArtDownloader already present, skipping.
-) else if exist "C:\Program Files\AlbumArtDownloader" (
-	echo [3/6] AlbumArtDownloader is installed - Download.cmd/Add Music.cmd will copy
-	echo   the files it needs on their first run.
+) else if exist "C:\Program Files\AlbumArtDownloader\aad.exe" (
+	echo [3/6] Copying AlbumArtDownloader files...
+	if not exist "Redistributables\AlbumArtDownloader" md "Redistributables\AlbumArtDownloader"
+	xcopy /e /i /y "C:\Program Files\AlbumArtDownloader\*" "Redistributables\AlbumArtDownloader\" >nul
+	echo   Done.
+) else if exist "C:\Program Files (x86)\AlbumArtDownloader\aad.exe" (
+	echo [3/6] Copying AlbumArtDownloader files...
+	if not exist "Redistributables\AlbumArtDownloader" md "Redistributables\AlbumArtDownloader"
+	xcopy /e /i /y "C:\Program Files (x86)\AlbumArtDownloader\*" "Redistributables\AlbumArtDownloader\" >nul
+	echo   Done.
 ) else (
 	echo [3/6] AlbumArtDownloader isn't installed. Downloading its installer...
 	powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri 'https://sourceforge.net/projects/album-art/files/latest/download' -OutFile '%TEMP%\AlbumArtDownloaderSetup.exe' -UseBasicParsing } catch { exit 1 }"
+	if not errorlevel 1 powershell -NoProfile -Command "$b=[IO.File]::ReadAllBytes('%TEMP%\AlbumArtDownloaderSetup.exe'); if($b.Length -lt 2 -or $b[0] -ne 0x4D -or $b[1] -ne 0x5A){exit 1}"
 	if errorlevel 1 (
+		if exist "%TEMP%\AlbumArtDownloaderSetup.exe" del /q "%TEMP%\AlbumArtDownloaderSetup.exe"
 		echo   FAILED - download and install it manually from https://sourceforge.net/projects/album-art/
 	) else (
-		echo   Opening the installer - please complete the setup wizard, then re-run this script
-		echo   so the needed files get copied into Redistributables\AlbumArtDownloader\.
-		start "" "%TEMP%\AlbumArtDownloaderSetup.exe"
+		echo   Opening the installer - complete the setup wizard. This window will wait
+		echo   and copy the required files automatically when installation finishes.
+		start /wait "" "%TEMP%\AlbumArtDownloaderSetup.exe"
+		if exist "C:\Program Files\AlbumArtDownloader\aad.exe" xcopy /e /i /y "C:\Program Files\AlbumArtDownloader\*" "Redistributables\AlbumArtDownloader\" >nul
+		if exist "C:\Program Files (x86)\AlbumArtDownloader\aad.exe" xcopy /e /i /y "C:\Program Files (x86)\AlbumArtDownloader\*" "Redistributables\AlbumArtDownloader\" >nul
+		if exist "Redistributables\AlbumArtDownloader\aad.exe" (echo   Installed and copied successfully.) else (echo   Installer finished, but aad.exe was not found. See README.md for manual setup.)
 	)
 )
 echo.
@@ -74,7 +90,7 @@ if exist "Redistributables\msg.exe" (
 ) else (
 	echo [4/6] msg.exe not found ^(Windows Home doesn't ship it^). This only powers a
 	echo   one-time notification popup - everything else still works without it, but
-	echo   the integrity check in Download.cmd/Add Music.cmd will complain it's missing.
+	echo   no notification popup will be shown. This does not block the downloader.
 )
 echo.
 
@@ -114,7 +130,8 @@ if not defined PYCMD (
 	echo [6/6] Skipped - no Python available yet.
 ) else (
 	echo [6/6] Installing Python packages ^(ytmusicapi, spotifyscraper^)...
-	%PYCMD% -m pip install --upgrade ytmusicapi spotifyscraper
+	%PYCMD% -m pip install --upgrade -r requirements.txt
+	if errorlevel 1 echo   FAILED - see the pip error above and try Setup.cmd again.
 )
 echo.
 

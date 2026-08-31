@@ -1,5 +1,5 @@
 :YTM Progress Bar Helper
-:Version 1.0
+:Version 1.0.1
 :Usage:
 :  call ProgressBar.cmd draw <current> <total> <label>   - redraw the bar in place
 :  call ProgressBar.cmd tick <current> <total> <label>   - redraw and flip the chomp animation

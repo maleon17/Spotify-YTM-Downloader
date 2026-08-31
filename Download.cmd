@@ -1,6 +1,6 @@
 :YTM Download Launcher
-:Created by Tristian Dedinas - https://github.com/Tech-How
-:Version 1.3
+:Originally created by Tristian Dedinas - https://github.com/Tech-How/YouTube-Music-Downloader
+:Version 1.0.1
 
 :Uses third-party licenses
 :yt-dlp - https://github.com/yt-dlp/yt-dlp
@@ -69,10 +69,11 @@ set trackcount=0
 for /f "tokens=* usebackq" %%a in (`find /v /c "" "%~dp0URLs.txt"`) do set trackcount=%%a
 for /f "tokens=3 delims=:" %%f in ("%trackcount%") do set trackcount=%%f
 set trackcount=%trackcount: =%
+if "%trackcount%"=="0" echo The queue is empty. Add music first. && pause >nul && exit /b 1
 set pl=songs
-if %trackcount%== 1 set pl=song
+if "%trackcount%"=="1" set pl=song
 echo %trackcount% %pl% will be downloaded.
-if %trackcount%== 1 goto singles
+if "%trackcount%"=="1" goto singles
 echo.
 echo Is this an Album? Press [N] if you are downloading singles, or [Y] if this is an album.
 choice /c yn /n /m "> "
@@ -146,7 +147,6 @@ if not exist "Redistributables\ProgressBar.cmd" set integrityverification=1 && e
 if not exist "Redistributables\ProgressTicker.cmd" set integrityverification=1 && echo Missing "Redistributables\ProgressTicker.cmd"
 if not exist "Redistributables\Get Info.cmd" set integrityverification=1 && echo Missing "Redistributables\Get Info.cmd"
 if not exist "Redistributables\Sleep.vbs" set integrityverification=1 && echo Missing "Redistributables\Sleep.vbs"
-if not exist "Redistributables\msg.exe" set integrityverification=1 && echo Missing "Redistributables\msg.exe"
 if %integrityverification%== 2 goto integritypass
 echo.
 echo One or more of the required redistributables is missing or not found. Please visit this project on GitHub.
@@ -170,11 +170,10 @@ if exist "%%d\LICENSE" move /y "%%d\LICENSE" "Redistributables\FFMPEG\" >nul 2>&
 if exist "%%d\README.txt" move /y "%%d\README.txt" "Redistributables\FFMPEG\" >nul 2>&1
 rd /s /q "%%d" >nul 2>&1
 )
-if exist "C:\Program Files\AlbumArtDownloader" (
-copy /y "C:\Program Files\AlbumArtDownloader" "Redistributables\AlbumArtDownloader" >nul 2>&1
-del /q "Redistributables\AlbumArtDownloader\AlbumArt.exe"
-Redistributables\msg.exe %username% All required files from AlbumArtDownloader have been copied to this project folder. You're free to uninstall the program now if you'd like.
-)
+if exist "C:\Program Files\AlbumArtDownloader\aad.exe" xcopy /e /i /y "C:\Program Files\AlbumArtDownloader\*" "Redistributables\AlbumArtDownloader\" >nul 2>&1
+if exist "C:\Program Files (x86)\AlbumArtDownloader\aad.exe" xcopy /e /i /y "C:\Program Files (x86)\AlbumArtDownloader\*" "Redistributables\AlbumArtDownloader\" >nul 2>&1
+if exist "Redistributables\AlbumArtDownloader\AlbumArt.exe" del /q "Redistributables\AlbumArtDownloader\AlbumArt.exe"
+if exist "Redistributables\AlbumArtDownloader\aad.exe" if exist "Redistributables\msg.exe" Redistributables\msg.exe %username% All required files from AlbumArtDownloader have been copied to this project folder.
 goto integritycheck_resume
 
 :setup
@@ -251,6 +250,7 @@ exit
 :singles
 echo 0 > "%~dp0Redistributables\dlProgress"
 del /q "%~dp0Redistributables\ytdlp.log" >nul 2>&1
+del /q "%~dp0FailedDownloads.txt" >nul 2>&1
 call "%~dp0Redistributables\ProgressBar.cmd" draw 0 %trackcount% "Starting"
 for /f "usebackq tokens=*" %%a in ("%~dp0URLs.txt") do call "%~dp0Redistributables\Downloader.cmd" %%a %trackcount%
 call "%~dp0Redistributables\ProgressBar.cmd" done
@@ -259,6 +259,8 @@ del /q "%~dp0Redistributables\dlProgress"
 del /q "%~dp0Redistributables\progressState.txt" >nul 2>&1
 del /q Cache\Album.jpg >nul 2>&1
 rd Cache >nul 2>&1
+dir /b "YTMusic" 2>nul | findstr "." >nul
+if errorlevel 1 goto noDownloadsToMove
 set "saveFolder=%date:/=_%"
 if exist "%saveFolder%" (
 set "saveFolder=%date:/=_% %time::=-%"
@@ -268,6 +270,14 @@ move "YTMusic\*" "%saveFolder%"
 for /d %%a in ("YTMusic\*") do move /y "%%~fa" "%saveFolder%" >nul 2>&1
 rd YTMusic >nul 2>&1
 if %autoImport%==true Import.cmd "%saveFolder%"
+goto downloadsMoved
+
+:noDownloadsToMove
+rd YTMusic >nul 2>&1
+
+:downloadsMoved
+
+if exist "%~dp0FailedDownloads.txt" goto downloadIncomplete
 
 REM --- Queue fully processed: rotate it out so the next Add Music run starts fresh ---
 del /q "%~dp0URLs.txt.bak3" >nul 2>&1
@@ -275,3 +285,17 @@ ren "%~dp0URLs.txt.bak2" URLs.txt.bak3 >nul 2>&1
 ren "%~dp0URLs.txt.bak" URLs.txt.bak2 >nul 2>&1
 ren "%~dp0URLs.txt" URLs.txt.bak >nul 2>&1
 exit
+
+:downloadIncomplete
+for /f %%c in ('find /v /c "" ^< "%~dp0FailedDownloads.txt"') do set "failedCount=%%c"
+echo.
+echo WARNING: %failedCount% track^(s^) could not be downloaded.
+echo Their YouTube IDs are listed in:
+echo %~dp0FailedDownloads.txt
+echo.
+echo The original queue was kept. Run Download.cmd again to retry failed tracks;
+echo successfully downloaded tracks will be skipped automatically.
+echo.
+echo Press any key to exit...
+pause >nul
+exit /b 1

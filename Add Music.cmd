@@ -1,6 +1,6 @@
 :YTM Music Scraper
-:Created by Tristian Dedinas - https://github.com/Tech-How
-:Version 1.3
+:Originally created by Tristian Dedinas - https://github.com/Tech-How/YouTube-Music-Downloader
+:Version 1.0.1
 
 :Uses third-party licenses
 :yt-dlp - https://github.com/yt-dlp/yt-dlp
@@ -67,13 +67,27 @@ echo %URL%
 
 echo "%URL%"|find "playlist?list=" >nul
 if %errorlevel% equ 0 goto fetchPlaylistFull
-Redistributables\YouTube-DL\youtube-dl.exe --ffmpeg-location "%~dp0Redistributables\FFMPEG\bin\ffmpeg.exe" -i --get-id %URL% >> "%~dp0URLs.txt"
+Redistributables\YouTube-DL\youtube-dl.exe --ffmpeg-location "%~dp0Redistributables\FFMPEG\bin\ffmpeg.exe" -i --get-id "%URL%" >> "%~dp0URLs.txt"
+if errorlevel 1 (
+	echo.
+	echo ERROR: yt-dlp could not read that YouTube Music link.
+	echo Press any key to continue...
+	pause >nul
+	goto prompt
+)
 goto fetchDone
 
 :fetchPlaylistFull
 call :ensurePython
 if not defined pythonCmd goto prompt
 %pythonCmd% "%~dp0Redistributables\Scripts\get_playlist_ids.py" "%URL%" >> "%~dp0URLs.txt"
+if errorlevel 1 (
+	echo.
+	echo ERROR: The YouTube Music playlist could not be added.
+	echo Press any key to continue...
+	pause >nul
+	goto prompt
+)
 
 :fetchDone
 cls
@@ -151,7 +165,6 @@ if not exist "Redistributables\ProgressBar.cmd" set integrityverification=1 && e
 if not exist "Redistributables\ProgressTicker.cmd" set integrityverification=1 && echo Missing "Redistributables\ProgressTicker.cmd"
 if not exist "Redistributables\Get Info.cmd" set integrityverification=1 && echo Missing "Redistributables\Get Info.cmd"
 if not exist "Redistributables\Sleep.vbs" set integrityverification=1 && echo Missing "Redistributables\Sleep.vbs"
-if not exist "Redistributables\msg.exe" set integrityverification=1 && echo Missing "Redistributables\msg.exe"
 if %integrityverification%== 2 goto integritypass
 echo.
 echo One or more of the required redistributables is missing or not found. Please visit this project on GitHub.
@@ -175,11 +188,10 @@ if exist "%%d\LICENSE" move /y "%%d\LICENSE" "Redistributables\FFMPEG\" >nul 2>&
 if exist "%%d\README.txt" move /y "%%d\README.txt" "Redistributables\FFMPEG\" >nul 2>&1
 rd /s /q "%%d" >nul 2>&1
 )
-if exist "C:\Program Files\AlbumArtDownloader" (
-copy /y "C:\Program Files\AlbumArtDownloader" "Redistributables\AlbumArtDownloader" >nul 2>&1
-del /q "Redistributables\AlbumArtDownloader\AlbumArt.exe"
-Redistributables\msg.exe %username% All required files from AlbumArtDownloader have been copied to this project folder. You're free to uninstall the program now if you'd like.
-)
+if exist "C:\Program Files\AlbumArtDownloader\aad.exe" xcopy /e /i /y "C:\Program Files\AlbumArtDownloader\*" "Redistributables\AlbumArtDownloader\" >nul 2>&1
+if exist "C:\Program Files (x86)\AlbumArtDownloader\aad.exe" xcopy /e /i /y "C:\Program Files (x86)\AlbumArtDownloader\*" "Redistributables\AlbumArtDownloader\" >nul 2>&1
+if exist "Redistributables\AlbumArtDownloader\AlbumArt.exe" del /q "Redistributables\AlbumArtDownloader\AlbumArt.exe"
+if exist "Redistributables\AlbumArtDownloader\aad.exe" if exist "Redistributables\msg.exe" Redistributables\msg.exe %username% All required files from AlbumArtDownloader have been copied to this project folder.
 goto integritycheck_resume
 
 :help

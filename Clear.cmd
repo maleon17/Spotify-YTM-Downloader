@@ -1,5 +1,5 @@
 :YTM Workspace Cleaner
-:Version 1.0
+:Version 1.0.1
 
 @echo off
 title YTM Cleaner

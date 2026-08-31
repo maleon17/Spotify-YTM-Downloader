@@ -15,6 +15,8 @@ clean for the caller to redirect into URLs.txt.
 import re
 import sys
 import threading
+import unicodedata
+from difflib import SequenceMatcher
 from pathlib import Path
 
 NOT_FOUND_PATH = Path(__file__).resolve().parent.parent.parent / "NotFound.txt"
@@ -113,14 +115,19 @@ def extract_spotify_ref(url):
 
 
 def get_tracks(client, kind, spotify_id):
-    """Returns a list of (title, artist) tuples."""
+    """Returns a list of (title, artists, duration_seconds) tuples."""
+    def track_tuple(track):
+        artists = ", ".join(a.name for a in track.artists if a.name)
+        duration = (track.duration_ms or 0) // 1000
+        return track.name, artists, duration
+
     if kind == "track":
         t = client.get_track(spotify_id)
-        return [(t.name, t.artists[0].name)]
+        return [track_tuple(t)] if t.artists else []
 
     if kind == "album":
         album = client.get_album(spotify_id)
-        return [(t.name, t.artists[0].name) for t in album.tracks if t.artists]
+        return [track_tuple(t) for t in album.tracks if t.artists]
 
     if kind == "playlist":
         playlist = client.get_playlist(spotify_id, max_tracks=10000)
@@ -128,10 +135,51 @@ def get_tracks(client, kind, spotify_id):
         for item in playlist.tracks:
             t = item.track
             if t and t.name and t.artists:
-                out.append((t.name, t.artists[0].name))
+                out.append(track_tuple(t))
         return out
 
     return []
+
+
+def normalize(text):
+    text = unicodedata.normalize("NFKD", text or "").casefold()
+    text = "".join(c for c in text if not unicodedata.combining(c))
+    return " ".join(re.findall(r"[a-z0-9]+", text))
+
+
+def result_score(result, title, artist, duration):
+    """Score a YTM result by title, artists, duration and version markers."""
+    result_title = result.get("title", "")
+    result_artists = ", ".join(a.get("name", "") for a in result.get("artists", []))
+    title_score = SequenceMatcher(None, normalize(title), normalize(result_title)).ratio()
+    artist_score = SequenceMatcher(None, normalize(artist), normalize(result_artists)).ratio()
+
+    result_duration = result.get("duration_seconds") or 0
+    if duration and result_duration:
+        duration_score = max(0.0, 1.0 - abs(duration - result_duration) / 30.0)
+    else:
+        duration_score = 0.5
+
+    score = title_score * 0.60 + artist_score * 0.30 + duration_score * 0.10
+    version_markers = {"live", "remix", "slowed", "sped", "instrumental", "karaoke", "nightcore"}
+    source_markers = version_markers.intersection(normalize(title).split())
+    result_markers = version_markers.intersection(normalize(result_title).split())
+    if source_markers != result_markers:
+        score -= 0.18
+    return score
+
+
+def find_best_match(yt, title, artist, duration):
+    query = f"{artist} {title}"
+    results = yt.search(query, filter="songs", limit=5)
+    if not results:
+        results = yt.search(query, limit=5)
+    candidates = [r for r in results if r.get("videoId")]
+    if not candidates:
+        return None, 0.0
+    best = max(candidates, key=lambda r: result_score(r, title, artist, duration))
+    score = result_score(best, title, artist, duration)
+    return (best.get("videoId"), score) if score >= 0.50 else (None, score)
 
 
 def main():
@@ -166,36 +214,34 @@ def main():
     bar.start(len(tracks))
     found = 0
     not_found = []
-    for i, (title, artist) in enumerate(tracks, start=1):
+    for i, (title, artist, duration) in enumerate(tracks, start=1):
         label = f"{artist} - {title}"
         bar.update(i - 1, label)
-        query = f"{artist} {title}"
         try:
-            search = yt.search(query, filter="songs", limit=1)
-            if not search:
-                search = yt.search(query, limit=1)
-            video_id = search[0]["videoId"] if search else None
+            video_id, score = find_best_match(yt, title, artist, duration)
         except Exception as e:
             bar.log(f"WARNING: search failed for '{label}': {e}")
             video_id = None
+            score = 0.0
 
         if video_id:
             print(video_id)
             found += 1
         else:
-            bar.log(f"WARNING: no YouTube Music match found for '{label}', skipping.")
+            bar.log(f"WARNING: no confident YouTube Music match found for '{label}' (score {score:.2f}), skipping.")
             not_found.append(label)
         bar.update(i, label)
 
     bar.done()
     sys.stdout.flush()
-    if found == 0:
-        print("ERROR: none of the Spotify tracks could be matched on YouTube Music.", file=sys.stderr)
-        sys.exit(1)
     if not_found:
         append_not_found(not_found)
         print(f"NOTE: {len(not_found)} of {len(tracks)} tracks were not found on YouTube Music.", file=sys.stderr)
         print(f"The list is saved in {NOT_FOUND_PATH} - you can find and add them yourself.", file=sys.stderr)
+    if found == 0:
+        print("ERROR: none of the Spotify tracks could be matched on YouTube Music.", file=sys.stderr)
+        sys.exit(1)
+    if not_found:
         sys.exit(2)
 
 

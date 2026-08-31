@@ -2,7 +2,7 @@
 :Runs detached (via start /b) while a track downloads, so the bar keeps animating
 :during long blocking calls. Reads state from progressState.txt and stops as soon
 :as progressTickerRun.txt is deleted by the caller.
-:Version 1.0
+:Version 1.0.1
 
 @echo off
 :loop

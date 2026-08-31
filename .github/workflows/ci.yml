@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Compile Python helpers
+        run: >-
+          python -m py_compile
+          Redistributables/Scripts/get_playlist_ids.py
+          Redistributables/Scripts/get_spotify_ids.py
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run matching tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Test failed-download handling
+        shell: pwsh
+        run: ./tests/test_download_failure.ps1
+
+      - name: Validate release structure and safety invariants
+        shell: pwsh
+        run: |
+          $required = @(
+            "LICENSE",
+            "VERSION",
+            "requirements.txt",
+            "README.md",
+            "Setup.cmd",
+            "Add Music.cmd",
+            "Download.cmd",
+            "Clear.cmd",
+            "Redistributables/Downloader.cmd",
+            "Redistributables/ProgressBar.cmd",
+            "Redistributables/ProgressTicker.cmd",
+            "Redistributables/Scripts/get_playlist_ids.py",
+            "Redistributables/Scripts/get_spotify_ids.py"
+          )
+          $missing = $required | Where-Object { -not (Test-Path -LiteralPath $_) }
+          if ($missing) { throw "Missing required files: $($missing -join ', ')" }
+
+          $version = (Get-Content -Raw "VERSION").Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "VERSION must use semantic versioning (for example 1.0.1)"
+          }
+
+          $source = Get-ChildItem -Recurse -File -Include *.cmd,*.py |
+            Get-Content -Raw
+          if ($source -match '--no-check-certificate') {
+            throw "Insecure --no-check-certificate flag found"
+          }
+
+          $download = Get-Content -Raw "Redistributables/Downloader.cmd"
+          if ($download -notmatch 'FailedDownloads\.txt') {
+            throw "Per-track failure reporting is missing"
+          }
+          if ($download -notmatch 'if not exist .*tracklocator.*\.mp3.*goto FormatFailed') {
+            throw "Final MP3 existence check is missing"
+          }
+
+      - name: Verify release archive contents
+        shell: pwsh
+        run: |
+          git archive --format=zip --output=release-test.zip HEAD
+          tar -tf release-test.zip | Out-File release-files.txt
+          $files = Get-Content release-files.txt
+          if ($files -notcontains "Setup.cmd") { throw "Setup.cmd missing from release archive" }
+          if ($files -notcontains "LICENSE") { throw "LICENSE missing from release archive" }
+          if ($files -match '(^|/)(Cache|YTMusic|Settings)/|\.mp3$|URLs\.txt') {
+            throw "Runtime/user data leaked into release archive"
+          }

@@ -1,6 +1,6 @@
 :YTM Import Script
-:Created by Tristian Dedinas - https://github.com/Tech-How
-:Version 1.3
+:Originally created by Tristian Dedinas - https://github.com/Tech-How/YouTube-Music-Downloader
+:Version 1.0.1
 
 @echo off
 title YTM Import
@@ -40,14 +40,15 @@ move /-y "%locator%\*" "%importDestination%"
 if errorlevel 1 set errorCount=1
 for /d %%a in ("%locator%\*") do move /-y "%%~fa" "%importDestination%"
 if errorlevel 1 set errorCount=1
-rd /s /q "%locator%" >nul 2>&1
 if %errorCount%==1 (
 echo.
 echo CAUTION: Some errors may have occured during the import operation.
+echo The source folder was NOT deleted. Resolve any filename conflicts and try again.
 echo Press any key to quit...
 timeout -1 >nul
 exit
 )
+rd "%locator%" >nul 2>&1
 echo.
 echo Import complete.
 echo Press any key to quit...

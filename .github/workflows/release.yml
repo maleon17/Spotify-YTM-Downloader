@@ -15,6 +15,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate version tag
+        shell: bash
+        run: |
+          test "v$(tr -d '\r\n' < VERSION)" = "${GITHUB_REF_NAME}" || {
+            echo "Tag ${GITHUB_REF_NAME} does not match VERSION ($(cat VERSION))"
+            exit 1
+          }
+
       - name: Build source archive
         run: git archive --format=zip --output="Spotify-YTM-Downloader-${GITHUB_REF_NAME}.zip" HEAD
 
