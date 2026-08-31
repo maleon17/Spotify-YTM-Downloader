@@ -45,3 +45,7 @@ try {
 } finally {
     if (Test-Path $fixture) { Remove-Item -Recurse -Force $fixture }
 }
+
+# GitHub Actions propagates the last native process exit code unless it is reset.
+# The downloader returning 1 is the expected assertion in this test.
+exit 0
